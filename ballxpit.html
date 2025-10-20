@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball x Pit 交互式进化指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #111827;
+            color: #d1d5db;
+            font-size: 14px;
+        }
+        [data-evolution], .component-card {
+            transition: all 0.2s ease-in-out;
+            will-change: filter, transform, opacity;
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300">
+
+    <div class="container mx-auto p-2 sm:p-4">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1">Ball x Pit 交互式进化指南</h1>
+            <p class="text-base text-gray-400">悬停高亮关联项，点击查看详情。</p>
+        </header>
+
+        <!-- 弹珠进化卡片网格 -->
+        <div class="mb-6">
+             <h2 class="text-xl font-semibold text-white text-center mb-3">弹珠进化组合</h2>
+             <div id="evolution-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <!-- 卡片将由JS动态生成 -->
+             </div>
+             <p class="text-xs text-center text-gray-500 mt-2">* 表示该进化项有多种不同的合成方式。</p>
+        </div>
+        
+        <!-- 其他进化 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 高级弹珠进化 -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                 <h2 class="text-xl font-semibold text-white text-center mb-3">高级弹珠进化</h2>
+                 <ul class="space-y-2">
+                     <li data-evolution="Nuclear Bomb" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Nuclear Bomb (核弹):</strong> Bomb (炸弹) + Poison (毒)</li>
+                     <li data-evolution="Black Hole" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Black Hole (黑洞):</strong> Sun (太阳) + Dark (黑暗)</li>
+                     <li data-evolution="Satan" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Satan (撒旦):</strong> Incubus (梦魇) + Succubus (魅魔)</li>
+                     <li data-evolution="Nosferatu" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Nosferatu (诺斯费拉图):</strong> Vampire Lord (吸血鬼领主) + Mosquito King (蚊王) + Spider Queen (蜘蛛女王)</li>
+                 </ul>
+            </div>
+            <!-- 被动道具进化 -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+                 <h2 class="text-xl font-semibold text-white text-center mb-3">被动道具进化</h2>
+                 <ul class="space-y-2">
+                     <li data-evolution="Soul Reaver" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Soul Reaver (灵魂掠夺者):</strong> Everflowing Goblet (永流高脚杯) + Vampiric Sword (吸血鬼之剑)</li>
+                     <li data-evolution="Cornucopia" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Cornucopia (丰饶之角):</strong> Baby Rattle (婴儿摇铃) + War Horn (战争号角)</li>
+                     <li data-evolution="Phantom Regalia" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Phantom Regalia (幻影王权):</strong> Ethereal Cloak (虚灵斗篷) + Ghostly Corset (鬼魅束腰)</li>
+                     <li data-evolution="Odiferous Shell" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Odiferous Shell (恶臭之壳):</strong> Breastplate (胸甲) + Corrupted Onion (腐化洋葱)</li>
+                     <li data-evolution="Gracious Impaler" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Gracious Impaler (优雅穿刺者):</strong> Reacher's Spear (触及之矛) + Deadeye's Amulet (神射手护符)</li>
+                     <li data-evolution="Tormentor's Mask" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Tormentor's Mask (折磨者面具):</strong> Crown of Thorns (荆棘王冠) + Spiked Collar (尖刺项圈)</li>
+                     <li data-evolution="Wings of the Anointed" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Wings of the Anointed (受膏者之翼):</strong> Fleet Feet (迅捷之足) + Radiant Feather (光辉羽毛)</li>
+                     <li data-evolution="Deadeye's Cross" class="cursor-pointer bg-gray-700 p-2 rounded-md"><strong>Deadeye's Cross (神射手十字):</strong> 所有4把匕首</li>
+                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="evolutionModal" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
+        <div class="modal-content bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md mx-auto p-6 transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-2xl font-bold text-white"></h3>
+                <button id="closeModal" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div>
+                <div id="modalComponentsWrapper">
+                    <p class="text-gray-400 mb-2">组合需要:</p>
+                    <div id="modalComponents" class="text-lg font-semibold mb-4 flex flex-wrap items-center gap-2"></div>
+                </div>
+                <p class="text-gray-400 mb-2">效果描述:</p>
+                <p id="modalDescription" class="text-gray-200"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const evolutionData = {
+            "Leech": { name: "Leech (水蛭)", components: [{key:"Bleed", name:"Bleed (流血)"}, {key:"Brood Mother", name:"Brood Mother (育母)"}], description: "攻击命中敌人时附着水蛭，持续造成伤害并为你恢复生命值。" },
+            "Berserk": { name: "Berserk (狂暴)", components: [{key:"Bleed", name:"Bleed (流血)"}, {key:"Charm", name:"Charm (魅惑)"}], description: "进入狂暴状态，极大地提升攻击速度和伤害，但会降低防御。(也可由燃烧+魅惑合成)", alt: true },
+            "Sacrifice": { name: "Sacrifice (献祭)", components: [{key:"Bleed", name:"Bleed (流血)"}, {key:"Dark", name:"Dark (黑暗)"}], description: "对敌人施加诅咒，当敌人被击中5次后，诅咒会引爆造成毁灭性伤害。" },
+            "Hemorrhage": { name: "Hemorrhage (大出血)", components: [{key:"Bleed", name:"Bleed (流血)"}, {key:"Iron", name:"Iron (钢铁)"}], description: "攻击可以穿透护甲，并造成更深、更持久的流血效果。" },
+            "Vampire Lord": { name: "Vampire Lord (吸血鬼领主)", components: [{key:"Bleed", name:"Bleed (流血)"}, {key:"Vampire", name:"Vampire (吸血鬼)"}], description: "终极的生命汲取形态，将造成伤害的一大部分转化为生命，并能召唤小型蝙蝠仆从。" },
+            "Maggot": { name: "Maggot (蛆虫)", components: [{key:"Brood Mother", name:"Brood Mother (育母)"}, {key:"Cell", name:"Cell (细胞)"}], description: "在敌人体内植入蛆虫，被感染的敌人在死亡时会爆裂并生成友方的小型球体。" },
+            "Spider Queen": { name: "Spider Queen (蜘蛛女王)", components: [{key:"Brood Mother", name:"Brood Mother (育母)"}, {key:"Egg Sac", name:"Egg Sac (卵囊)"}], description: "在场上生成蜘蛛卵，孵化出成群的小蜘蛛为你作战。" },
+            "Mosquito King": { name: "Mosquito King (蚊王)", components: [{key:"Brood Mother", name:"Brood Mother (育母)"}, {key:"Vampire", name:"Vampire (吸血鬼)"}], description: "召唤一群蚊子攻击敌人，每次攻击都能吸取生命并为你恢复。" },
+            "Magma": { name: "Magma (岩浆)", components: [{key:"Burn", name:"Burn (燃烧)"}, {key:"Earthquake", name:"Earthquake (地震)"}], description: "在地面上留下持续燃烧的岩浆池，对经过的敌人造成伤害和减速。" },
+            "Frozen Flame": { name: "Frozen Flame (冰冻火焰)", components: [{key:"Burn", name:"Burn (燃烧)"}, {key:"Freeze", name:"Freeze (冰冻)"}], description: "释放出矛盾的冰火之力，对敌人同时造成燃烧和冰冻效果，使其无法动弹并持续掉血。" },
+            "Bomb": { name: "Bomb (炸弹)", components: [{key:"Burn", name:"Burn (燃烧)"}, {key:"Iron", name:"Iron (钢铁)"}], description: "击中敌人时会发生剧烈爆炸，对大范围内的所有敌人造成伤害。" },
+            "Sun": { name: "Sun (太阳)", components: [{key:"Burn", name:"Burn (燃烧)"}, {key:"Light", name:"Light (光明)"}], description: "化身为小型太阳，散发致盲的强光并融化周围的一切，造成持续范围伤害。" },
+            "Inferno": { name: "Inferno (炼狱)", components: [{key:"Burn", name:"Burn (燃烧)"}, {key:"Wind", name:"Wind (风)"}], description: "制造扩散的火焰风暴，将火焰吹向更广的范围，点燃路径上的一切。" },
+            "Overgrowth": { name: "Overgrowth (过度生长)", components: [{key:"Cell", name:"Cell (细胞)"}, {key:"Earthquake", name:"Earthquake (地震)"}], description: "从地面召唤荆棘藤蔓，缠绕并伤害大范围内的敌人。" },
+            "Radiation Beam": { name: "Radiation Beam (辐射光束)", components: [{key:"Cell", name:"Cell (细胞)"}, {key:"Laser", name:"Laser (激光)"}], description: "发射一道带有辐射的激光，穿透敌人并留下持续伤害的辐射区域。(也可由毒+激光合成)", alt: true },
+            "Virus": { name: "Virus (病毒)", components: [{key:"Cell", name:"Cell (细胞)"}, {key:"Poison", name:"Poison (毒)"}], description: "让敌人感染致命病毒，病毒会在敌人之间传播，并持续造成伤害。(也可由幽灵+毒合成)", alt: true },
+            "Incubus": { name: "Incubus (梦魇)", components: [{key:"Charm", name:"Charm (魅惑)"}, {key:"Dark", name:"Dark (黑暗)"}], description: "迷惑敌人，使其在短时间内为你作战，随后会受到大量暗影伤害。" },
+            "Lovestruck": { name: "Lovestruck (热恋)", components: [{key:"Charm", name:"Charm (魅惑)"}, {key:"Light", name:"Light (光明)"}], description: "使敌人陷入爱河，停止攻击并降低防御力，使其成为易受攻击的目标。" },
+            "Succubus": { name: "Succubus (魅魔)", components: [{key:"Charm", name:"Charm (魅惑)"}, {key:"Vampire", name:"Vampire (吸血鬼)"}], description: "引诱敌人，吸取其生命精华为你恢复生命值，并使其攻击力下降。" },
+            "Phantom": { name: "Phantom (幻影)", components: [{key:"Dark", name:"Dark (黑暗)"}, {key:"Ghost", name:"Ghost (幽灵)"}], description: "变为虚体形态，可以穿透敌人和障碍物，并造成无视防御的暗影伤害。" },
+            "Assassin": { name: "Assassin (刺客)", components: [{key:"Dark", name:"Dark (黑暗)"}, {key:"Iron", name:"Iron (钢铁)"}], description: "发动沉默而致命的打击，对生命值低于一定百分比的敌人造成必杀一击。(也可由幽灵+钢铁合成)", alt: true },
+            "Flicker": { name: "Flicker (闪烁)", components: [{key:"Dark", name:"Dark (黑暗)"}, {key:"Light", name:"Light (光明)"}], description: "在光明与黑暗之间快速闪烁，周期性地对屏幕上所有敌人造成伤害。" },
+            "Noxious": { name: "Noxious (剧毒)", components: [{key:"Dark", name:"Dark (黑暗)"}, {key:"Wind", name:"Wind (风)"}], description: "制造出致命的毒云，随风飘散，对云中的所有敌人造成持续伤害和减益效果。(也可由毒+风合成)", alt: true },
+            "Glacier": { name: "Glacier (冰川)", components: [{key:"Earthquake", name:"Earthquake (地震)"}, {key:"Freeze", name:"Freeze (冰冻)"}], description: "召唤巨大的冰川缓慢移动，碾碎并冰冻路径上的一切敌人。" },
+            "Swamp": { name: "Swamp (沼泽)", components: [{key:"Earthquake", name:"Earthquake (地震)"}, {key:"Poison", name:"Poison (毒)"}], description: "将地面变为剧毒沼泽，减速并持续毒害其中的所有敌人。" },
+            "Sandstorm": { name: "Sandstorm (沙尘暴)", components: [{key:"Earthquake", name:"Earthquake (地震)"}, {key:"Wind", name:"Wind (风)"}], description: "掀起遮天蔽日的沙尘暴，降低敌人的命中率并持续造成伤害。" },
+            "Shotgun": { name: "Shotgun (霰弹枪)", components: [{key:"Egg Sac", name:"Egg Sac (卵囊)"}, {key:"Iron", name:"Iron (钢铁)"}], description: "像霰弹枪一样，一次性发射出多个小型、坚硬的投射物。" },
+            "Wraith": { name: "Wraith (怨灵)", components: [{key:"Freeze", name:"Freeze (冰冻)"}, {key:"Ghost", name:"Ghost (幽灵)"}], description: "释放出冰冷的怨灵，穿透敌人并施加冰冻效果，使其移动和攻击速度大幅下降。" },
+            "Freeze Ray": { name: "Freeze Ray (冰冻射线)", components: [{key:"Freeze", name:"Freeze (冰冻)"}, {key:"Laser", name:"Laser (激光)"}], description: "发射一道极寒的激光，瞬间冰冻路径上的所有敌人。" },
+            "Blizzard": { name: "Blizzard (暴风雪)", components: [{key:"Freeze", name:"Freeze (冰冻)"}, {key:"Wind", name:"Wind (风)"}], description: "召唤一场夹杂着狂风的暴风雪，对大范围敌人造成持续的冰冻伤害和减速。(也可由冰冻+闪电合成)", alt: true },
+            "Soul Sucker": { name: "Soul Sucker (灵魂吸取者)", components: [{key:"Ghost", name:"Ghost (幽灵)"}, {key:"Vampire", name:"Vampire (吸血鬼)"}], description: "直接从敌人身上吸取灵魂能量，造成伤害并为你恢复大量的生命值。" },
+            "Holy Laser": { name: "Holy Laser (神圣激光)", components: [{key:"Laser", name:"Laser (水平)"}, {key:"Laser", name:"Laser (垂直)"}], description: "发射十字形的神圣激光，同时对一整行和一整列的敌人造成毁灭性打击。" },
+            "Laser Beam": { name: "Laser Beam (激光束)", components: [{key:"Laser", name:"Laser (激光)"}, {key:"Light", name:"Light (光明)"}], description: "强化激光，使其更粗、伤害更高，并能点燃敌人造成持续伤害。" },
+            "Flash": { name: "Flash (闪光)", components: [{key:"Light", name:"Light (光明)"}, {key:"Lightning", name:"Lightning (闪电)"}], description: "以闪电般的速度移动和攻击，并能使敌人暂时失明。" },
+            "Lightning Rod": { name: "Lightning Rod (避雷针)", components: [{key:"Lightning", name:"Lightning (闪电)"}, {key:"Iron", name:"Iron (钢铁)"}], description: "在击中点形成一个避雷针，持续吸引闪电攻击周围的敌人。" },
+            "Storm": { name: "Storm (风暴)", components: [{key:"Lightning", name:"Lightning (闪电)"}, {key:"Wind", name:"Wind (风)"}], description: "制造一个移动的雷电风暴，自动追踪并电击附近的敌人。" },
+            "Nuclear Bomb": { name: "Nuclear Bomb (核弹)", components: [{key:"Bomb", name:"Bomb (炸弹)"}, {key:"Poison", name:"Poison (毒)"}], description: "制造一场巨大的核爆，对全屏敌人造成高额初始伤害，并在后续留下强烈的辐射区域持续造成伤害。" },
+            "Black Hole": { name: "Black Hole (黑洞)", components: [{key:"Sun", name:"Sun (太阳)"}, {key:"Dark", name:"Dark (黑暗)"}], description: "在屏幕上创建一个强大的引力奇点，将周围的敌人和投射物全部吸入并湮灭。" },
+            "Satan": { name: "Satan (撒旦)", components: [{key:"Incubus", name:"Incubus (梦魇)"}, {key:"Succubus", name:"Succubus (魅魔)"}], description: "召唤恶魔之王撒旦，同时拥有梦魇的控制和魅魔的吸取能力，是战场上的终极主宰。" },
+            "Nosferatu": { name: "Nosferatu (诺斯费拉图)", components: [{key:"Vampire Lord", name:"Vampire Lord (吸血鬼领主)"}, {key:"Mosquito King", name:"Mosquito King (蚊王)"}, {key:"Spider Queen", name:"Spider Queen (蜘蛛女王)"}], description: "吸血鬼、蚊子和蜘蛛的终极融合体，拥有无与伦比的生命汲取能力和仆从大军，是真正的不死君王。" },
+            "Soul Reaver": { name: "Soul Reaver (灵魂掠夺者)", components: [{key:"Everflowing Goblet", name:"Everflowing Goblet (永流高脚杯)"}, {key:"Vampiric Sword", name:"Vampiric Sword (吸血鬼之剑)"}], description: "极大地增强你的生命偷取效果，并将溢出的治疗量转化为一个可以吸收伤害的护盾。" },
+            "Cornucopia": { name: "Cornucopia (丰饶之角)", components: [{key:"Baby Rattle", name:"Baby Rattle (婴儿摇铃)"}, {key:"War Horn", name:"War Horn (战争号角)"}], description: "周期性地产生各种资源，包括金币、宝石和生命恢复，是持续作战的强大保障。" },
+            "Phantom Regalia": { name: "Phantom Regalia (幻影王权)", components: [{key:"Ethereal Cloak", name:"Ethereal Cloak (虚灵斗篷)"}, {key:"Ghostly Corset", name:"Ghostly Corset (鬼魅束腰)"}], description: "提供极高的闪避几率，并让你在闪避成功后短暂进入无敌状态。" },
+            "Odiferous Shell": { name: "Odiferous Shell (恶臭之壳)", components: [{key:"Breastplate", name:"Breastplate (胸甲)"}, {key:"Corrupted Onion", name:"Corrupted Onion (腐化洋葱)"}], description: "当你受到伤害时，会释放出一股恶臭，对周围的敌人造成伤害并降低其攻击力。" },
+            "Gracious Impaler": { name: "Gracious Impaler (优雅穿刺者)", components: [{key:"Reacher's Spear", name:"Reacher's Spear (触及之矛)"}, {key:"Deadeye's Amulet", name:"Deadeye's Amulet (神射手护符)"}], description: "你的所有投射物都将获得穿透效果，并对被穿透的每个敌人造成递增的伤害。" },
+            "Tormentor's Mask": { name: "Tormentor's Mask (折磨者面具)", components: [{key:"Crown of Thorns", name:"Crown of Thorns (荆棘王冠)"}, {key:"Spiked Collar", name:"Spiked Collar (尖刺项圈)"}], description: "将你受到的部分伤害反弹给攻击者，并且你的攻击会对生命值低于50%的敌人造成额外伤害。" },
+            "Wings of the Anointed": { name: "Wings of the Anointed (受膏者之翼)", components: [{key:"Fleet Feet", name:"Fleet Feet (迅捷之足)"}, {key:"Radiant Feather", name:"Radiant Feather (光辉羽毛)"}], description: "极大地提升你的移动速度，并让你能够免疫地面上的陷阱和减速效果。" },
+            "Deadeye's Cross": { name: "Deadeye's Cross (神射手十字)", components: [{key:"Daggers", name:"所有4把匕首"}], description: "融合四把元素匕首的力量，大幅提升暴击率、暴击伤害和投射物速度，每一击都精准而致命。" },
+        };
+        
+        const baseItemData = {
+            "Bleed": { name: "Bleed (流血)", description: "基础弹珠：攻击会使敌人流血，在一段时间内造成持续伤害。" },
+            "Brood Mother": { name: "Brood Mother (育母)", description: "基础弹珠：周期性地产生小型单位为你作战。" },
+            "Burn": { name: "Burn (燃烧)", description: "基础弹珠：攻击会点燃敌人，造成持续的火焰伤害。" },
+            "Cell": { name: "Cell (细胞)", description: "基础弹珠：具有分裂和增殖能力的弹珠。" },
+            "Charm": { name: "Charm (魅惑)", description: "基础弹珠：攻击会迷惑敌人，使其暂时停止攻击或攻击其友军。" },
+            "Dark": { name: "Dark (黑暗)", description: "基础弹珠：运用暗影能量，通常附带诅咒或削弱效果。" },
+            "Earthquake": { name: "Earthquake (地震)", description: "基础弹珠：造成范围性的地面冲击和伤害。" },
+            "Egg Sac": { name: "Egg Sac (卵囊)", description: "基础弹珠：可以孵化出小型生物的卵囊。" },
+            "Freeze": { name: "Freeze (冰冻)", description: "基础弹珠：攻击可以冰冻或减速敌人。" },
+            "Ghost": { name: "Ghost (幽灵)", description: "基础弹珠：可以穿透敌人，造成难以防御的伤害。" },
+            "Iron": { name: "Iron (钢铁)", description: "基础弹珠：坚硬的弹珠，通常具有更高的基础伤害或破甲效果。" },
+            "Laser": { name: "Laser (激光)", description: "基础弹珠：发射一道直线激光，穿透路径上的所有敌人。分为水平和垂直两种。" },
+            "Light": { name: "Light (光明)", description: "基础弹珠：运用光明力量，通常带有治疗或致盲效果。" },
+            "Lightning": { name: "Lightning (闪电)", description: "基础弹珠：攻击可以释放连锁闪电，弹射到多个敌人身上。" },
+            "Poison": { name: "Poison (毒)", description: "基础弹珠：攻击会使敌人中毒，在长时间内造成持续伤害。" },
+            "Vampire": { name: "Vampire (吸血鬼)", description: "基础弹珠：攻击可以将造成的部分伤害转化为自身生命值。" },
+            "Wind": { name: "Wind (风)", description: "基础弹珠：可以吹飞敌人或增强其他元素效果的范围。" },
+            "Everflowing Goblet": { name: "Everflowing Goblet (永流高脚杯)", description: "基础被动：缓慢地持续恢复生命值。" },
+            "Vampiric Sword": { name: "Vampiric Sword (吸血鬼之剑)", description: "基础被动：提供一定比例的生命偷取。" },
+            "Baby Rattle": { name: "Baby Rattle (婴儿摇铃)", description: "基础被动：增加击败敌人后获得的金币和资源。" },
+            "War Horn": { name: "War Horn (战争号角)", description: "基础被动：提升所有友方单位的攻击力。" },
+            "Ethereal Cloak": { name: "Ethereal Cloak (虚灵斗篷)", description: "基础被动：提供一定的闪避几率。" },
+            "Ghostly Corset": { name: "Ghostly Corset (鬼魅束腰)", description: "基础被动：闪避成功后，短时间内大幅提升移动速度，并可以穿过敌人。" },
+            "Breastplate": { name: "Breastplate (胸甲)", description: "基础被动：提供固定的伤害减免。" },
+            "Corrupted Onion": { name: "Corrupted Onion (腐化洋葱)", description: "基础被动：当你受伤时，会释放出腐化气体，对近身的敌人造成伤害。" },
+            "Reacher's Spear": { name: "Reacher's Spear (触及之矛)", description: "基础被动：增加你的攻击距离和投射物范围。" },
+            "Deadeye's Amulet": { name: "Deadeye's Amulet (神射手护符)", description: "基础被动：增加投射物的飞行速度。" },
+            "Crown of Thorns": { name: "Crown of Thorns (荆棘王冠)", description: "基础被动：将你受到的部分近战伤害反弹给攻击者。" },
+            "Spiked Collar": { name: "Spiked Collar (尖刺项圈)", description: "基础被动：提升你对低生命值敌人的伤害。" },
+            "Fleet Feet": { name: "Fleet Feet (迅捷之足)", description: "基础被动：提升你的基础移动速度。" },
+            "Radiant Feather": { name: "Radiant Feather (光辉羽毛)", description: "基础被动：小幅提升移动速度和闪避几率。" },
+        };
+
+        const baseBallCombinations = {
+            'Bleed (流血)': {'Brood Mother (育母)': 'Leech','Charm (魅惑)': 'Berserk','Dark (黑暗)': 'Sacrifice','Iron (钢铁)': 'Hemorrhage','Vampire (吸血鬼)': 'Vampire Lord'},
+            'Brood Mother (育母)': {'Bleed (流血)': 'Leech','Cell (细胞)': 'Maggot','Egg Sac (卵囊)': 'Spider Queen','Vampire (吸血鬼)': 'Mosquito King'},
+            'Burn (燃烧)': {'Charm (魅惑)': 'Berserk','Earthquake (地震)': 'Magma','Freeze (冰冻)': 'Frozen Flame','Iron (钢铁)': 'Bomb','Light (光明)': 'Sun','Wind (风)': 'Inferno'},
+            'Cell (细胞)': {'Brood Mother (育母)': 'Maggot','Earthquake (地震)': 'Overgrowth','Laser (激光)': 'Radiation Beam','Poison (毒)': 'Virus'},
+            'Charm (魅惑)': {'Bleed (流血)': 'Berserk','Burn (燃烧)': 'Berserk','Dark (黑暗)': 'Incubus','Light (光明)': 'Lovestruck','Vampire (吸血鬼)': 'Succubus'},
+            'Dark (黑暗)': {'Bleed (流血)': 'Sacrifice','Charm (魅惑)': 'Incubus','Ghost (幽灵)': 'Phantom','Iron (钢铁)': 'Assassin','Light (光明)': 'Flicker','Wind (风)': 'Noxious'},
+            'Earthquake (地震)': {'Burn (燃烧)': 'Magma','Cell (细胞)': 'Overgrowth','Freeze (冰冻)': 'Glacier','Poison (毒)': 'Swamp','Wind (风)': 'Sandstorm'},
+            'Egg Sac (卵囊)': {'Brood Mother (育母)': 'Spider Queen','Iron (钢铁)': 'Shotgun'},
+            'Freeze (冰冻)': {'Burn (燃烧)': 'Frozen Flame','Earthquake (地震)': 'Glacier','Ghost (幽灵)': 'Wraith','Laser (激光)': 'Freeze Ray','Lightning (闪电)': 'Blizzard','Wind (风)': 'Blizzard'},
+            'Ghost (幽灵)': {'Dark (黑暗)': 'Phantom','Freeze (冰冻)': 'Wraith','Iron (钢铁)': 'Assassin','Poison (毒)': 'Virus','Vampire (吸血鬼)': 'Soul Sucker'},
+            'Iron (钢铁)': {'Bleed (流血)': 'Hemorrhage','Burn (燃烧)': 'Bomb','Dark (黑暗)': 'Assassin','Egg Sac (卵囊)': 'Shotgun','Ghost (幽灵)': 'Assassin','Lightning (闪电)': 'Lightning Rod'},
+            'Laser (激光)': {'Cell (细胞)': 'Radiation Beam','Freeze (冰冻)': 'Freeze Ray','Light (光明)': 'Laser Beam','Poison (毒)': 'Radiation Beam', 'Laser (垂直)': 'Holy Laser'},
+            'Light (光明)': {'Burn (燃烧)': 'Sun','Charm (魅惑)': 'Lovestruck','Dark (黑暗)': 'Flicker','Laser (激光)': 'Laser Beam','Lightning (闪电)': 'Flash'},
+            'Lightning (闪电)': {'Freeze (冰冻)': 'Blizzard','Iron (钢铁)': 'Lightning Rod','Light (光明)': 'Flash','Wind (风)': 'Storm'},
+            'Poison (毒)': {'Cell (细胞)': 'Virus','Earthquake (地震)': 'Swamp','Ghost (幽灵)': 'Virus','Laser (激光)': 'Radiation Beam','Wind (风)': 'Noxious'},
+            'Vampire (吸血鬼)': {'Bleed (流血)': 'Vampire Lord','Brood Mother (育母)': 'Mosquito King','Charm (魅惑)': 'Succubus','Ghost (幽灵)': 'Soul Sucker'},
+            'Wind (风)': {'Burn (燃烧)': 'Inferno','Dark (黑暗)': 'Noxious','Earthquake (地震)': 'Sandstorm','Freeze (冰冻)': 'Blizzard','Lightning (闪电)': 'Storm','Poison (毒)': 'Noxious'},
+        };
+
+        const modal = document.getElementById('evolutionModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalComponents = document.getElementById('modalComponents');
+        const modalComponentsWrapper = document.getElementById('modalComponentsWrapper');
+        const modalDescription = document.getElementById('modalDescription');
+        const closeModalBtn = document.getElementById('closeModal');
+        
+        let itemColorMap = {};
+
+        function openModal(itemKey) {
+            const evolution = evolutionData[itemKey];
+            const baseItem = baseItemData[itemKey];
+
+            if (evolution) {
+                modalTitle.textContent = evolution.name;
+                modalDescription.textContent = evolution.description;
+                modalComponentsWrapper.style.display = 'block';
+                modalComponents.innerHTML = ''; 
+                
+                evolution.components.forEach((comp, index) => {
+                    const color = itemColorMap[comp.key] || '#4b5563';
+                    const card = document.createElement('span');
+                    
+                    if (evolutionData[comp.key] || baseItemData[comp.key]) {
+                        card.className = 'component-card p-2 rounded-md inline-block text-white cursor-pointer hover:brightness-125';
+                        card.onclick = () => openModal(comp.key);
+                    } else {
+                        card.className = 'p-2 rounded-md inline-block text-white'; // Not clickable
+                    }
+                    
+                    card.style.backgroundColor = color;
+                    card.textContent = comp.name;
+                    modalComponents.appendChild(card);
+
+                    if (index < evolution.components.length - 1) {
+                        const plus = document.createElement('span');
+                        plus.className = 'mx-1 text-gray-400 font-bold';
+                        plus.textContent = '+';
+                        modalComponents.appendChild(plus);
+                    }
+                });
+            } else if (baseItem) {
+                modalTitle.textContent = baseItem.name;
+                modalDescription.textContent = baseItem.description;
+                modalComponentsWrapper.style.display = 'none';
+            } else {
+                return; // Item not found
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('evolution-grid');
+            const baseBallOrder = Object.keys(baseBallCombinations);
+
+            const getChineseName = (fullName) => {
+                const match = fullName.match(/\(([^)]+)\)/);
+                return match ? match[1] : fullName.split(' ')[0];
+            };
+
+            baseBallOrder.forEach(baseBallName => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800 rounded-lg p-3 shadow-lg';
+                const title = document.createElement('h3');
+                title.className = 'text-base font-bold text-white text-center mb-2';
+                title.textContent = baseBallName;
+                card.appendChild(title);
+                const list = document.createElement('ul');
+                list.className = 'space-y-1';
+                card.appendChild(list);
+                const combinations = baseBallCombinations[baseBallName];
+                for (const partnerBallName in combinations) {
+                    const evolutionKey = combinations[partnerBallName];
+                    const evolutionInfo = evolutionData[evolutionKey];
+                    if(evolutionInfo){
+                        const listItem = document.createElement('li');
+                        listItem.className = 'cursor-pointer p-1 rounded-md text-sm';
+                        listItem.dataset.evolution = evolutionKey;
+                        const partnerChinese = getChineseName(partnerBallName);
+                        const evolutionChinese = getChineseName(evolutionInfo.name);
+                        const altIndicator = evolutionInfo.alt ? '<sup class="text-blue-400 font-bold">*</sup>' : '';
+                        listItem.innerHTML = `<span class="text-gray-400">+ ${partnerChinese}</span> &rarr; <strong>${evolutionChinese}${altIndicator}</strong>`;
+                        list.appendChild(listItem);
+                    }
+                }
+                grid.appendChild(card);
+            });
+
+            const colorPalette = [
+                '#581c87', '#1e3a8a', '#155e75', '#065f46', '#7f1d1d', '#86198f', '#a21caf',
+                '#be185d', '#be123c', '#9a3412', '#854d0e', '#365314', '#134e4a', '#115e59',
+                '#0c4a6e', '#312e81', '#4c1d95', '#b91c1c', '#047857', '#92400e', '#4338ca',
+                '#6d28d9', '#db2777', '#ea580c', '#ca8a04', '#65a30d', '#059669', '#0891b2',
+                '#0369a1', '#4f46e5', '#7c3aed', '#c026d3', '#e11d48', '#f97316', '#f59e0b',
+                '#84cc16', '#10b981', '#06b6d4', '#0ea5e9', '#6366f1', '#8b5cf6'
+            ];
+
+            const allItemKeys = new Set([...Object.keys(evolutionData), ...Object.keys(baseItemData)]);
+            let colorIndex = 0;
+            allItemKeys.forEach(key => {
+                itemColorMap[key] = colorPalette[colorIndex % colorPalette.length];
+                colorIndex++;
+            });
+            
+            const elements = document.querySelectorAll('[data-evolution]');
+            elements.forEach(el => {
+                const evolution = el.dataset.evolution;
+                const color = itemColorMap[evolution];
+                if (color) {
+                    el.style.backgroundColor = color;
+                    el.style.color = '#ffffff';
+                }
+                el.addEventListener('click', (e) => {
+                    openModal(e.currentTarget.dataset.evolution);
+                });
+                el.addEventListener('mouseover', (e) => {
+                    const currentEvolution = e.currentTarget.dataset.evolution;
+                    elements.forEach(item => {
+                        if (item.dataset.evolution === currentEvolution) {
+                            item.style.filter = 'brightness(1.3)';
+                            item.style.transform = 'scale(1.05)';
+                            item.style.zIndex = '30';
+                        } else {
+                            item.style.opacity = '0.3';
+                        }
+                    });
+                });
+                el.addEventListener('mouseout', () => {
+                    elements.forEach(item => {
+                        item.style.filter = '';
+                        item.style.transform = '';
+                        item.style.zIndex = '';
+                        item.style.opacity = '';
+                    });
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
+
